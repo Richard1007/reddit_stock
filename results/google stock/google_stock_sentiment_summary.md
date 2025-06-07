@@ -1,6 +1,6 @@
 # Reddit Sentiment Analysis: Google Stock
 
-### Summary (Past Week)
+### Summary on 2 posts
 - Total Comments Analyzed: 193
 - Sentiment Distribution:
   - **Neutral**: 92 comments
