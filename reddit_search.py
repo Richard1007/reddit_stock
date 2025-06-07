@@ -175,27 +175,12 @@ def create_argument_parser():
         description='Search Reddit posts with configurable parameters',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
-==========================================
+For detailed usage examples and parameter options, see the documentation at the end of this file.
 
-📋 Available Parameters:
-┌─────────────┬──────┬─────────────────┬──────────────────────────────────┬─────────────┬─────────────────────────┐
-│ Parameter   │ Short│ Long            │ Choices                          │ Default     │ Description             │
-├─────────────┼──────┼─────────────────┼──────────────────────────────────┼─────────────┼─────────────────────────┤
-│ Search Term │ -s   │ --search-term   │ Any text string                  │ Google stock│ What to search for      │
-│ Limit       │ -l   │ --limit         │ Any positive integer             │ 2           │ Number of posts         │
-│ Time Filter │ -t   │ --time-filter   │ day, week, month, year, all      │ week        │ Time period to search   │
-│ Sort Method │ -o   │ --sort          │ relevance, hot, top, new, comments│ relevance   │ How to sort results     │
-└─────────────┴──────┴─────────────────┴──────────────────────────────────┴─────────────┴─────────────────────────┘
+Basic usage:
+  python reddit_search.py -s "search term" -l 5 -t week -o hot
 
-
-🚀 Real-World Examples:
-  # Find trending Tesla discussions from today
-  python reddit_search.py -s "Tesla" -l 5 -t day -o hot
-  
-  # Search for recent Bitcoin news
-  python reddit_search.py -s "Bitcoin BTC news" -l 15 -t day -o new
-  
+Use --help to see all available options.
         """
     )
     
@@ -329,3 +314,26 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+=================================================================================
+REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
+=================================================================================
+
+📋 Available Parameters:
+┌─────────────┬──────┬─────────────────┬──────────────────────────────────┬─────────────┬─────────────────────────┐
+│ Parameter   │ Short│ Long            │ Choices                          │ Default     │ Description             │
+├─────────────┼──────┼─────────────────┼──────────────────────────────────┼─────────────┼─────────────────────────┤
+│ Search Term │ -s   │ --search-term   │ Any text string                  │ Google stock│ What to search for      │
+│ Limit       │ -l   │ --limit         │ Any positive integer             │ 2           │ Number of posts         │
+│ Time Filter │ -t   │ --time-filter   │ day, week, month, year, all      │ week        │ Time period to search   │
+│ Sort Method │ -o   │ --sort          │ relevance, hot, top, new, comments│ relevance   │ How to sort results     │
+└─────────────┴──────┴─────────────────┴──────────────────────────────────┴─────────────┴─────────────────────────┘
+                # Show help
+
+ Examples:
+  python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
+
+  python reddit_search.py -s "Apple stock" -l 10 -t month -o top
+"""
