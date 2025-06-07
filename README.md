@@ -1,45 +1,152 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# Reddit API - Google Stock Search
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+This Python script uses the official Reddit API (via PRAW) to search for posts about "Google stock" from the past week, retrieving the top 2 posts sorted by relevance along with all their comments as JSON data.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+## Features
 
----
+- Searches Reddit for "Google stock" posts from the past week
+- Retrieves top 2 posts sorted by relevance
+- Extracts all comments from each post
+- Saves data as structured JSON
+- Handles deleted users, comments, and API rate limits
 
-## Edit a file
+## Setup
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+### 1. Install Dependencies
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+```bash
+pip install -r requirements.txt
+```
 
----
+### 2. Reddit API Credentials
 
-## Create a file
+You need to create a Reddit application to get API credentials:
 
-Next, you’ll add a new file to this repository.
+1. Go to https://www.reddit.com/prefs/apps
+2. Click "Create App" or "Create Another App"
+3. Choose "script" as the application type
+4. Fill in the required fields:
+   - **Name**: Your app name (e.g., "Google Stock Search")
+   - **Description**: Brief description
+   - **About URL**: Can be left blank
+   - **Redirect URI**: Use `http://localhost:8080` for script apps
 
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
+5. After creating the app, note down:
+   - **Client ID**: Found under the app name (short string)
+   - **Client Secret**: The longer string labeled "secret"
 
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+### 3. Environment Configuration
 
----
+The credentials are currently hardcoded in the scripts. You can modify them in:
+- `reddit_search.py` 
+- `simple_test.py`
 
-## Clone a repository
+Or use the format in `env_example.txt` to set up environment variables.
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
+## Usage
 
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
+### Quick Test
 
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+Run the connection test:
+
+```bash
+python simple_test.py
+```
+
+### Main Search
+
+Run the main script:
+
+```bash
+python reddit_search.py
+```
+
+The script will:
+1. Connect to Reddit API
+2. Search for "Google stock" posts from the past week
+3. Retrieve the top 2 posts sorted by relevance
+4. Extract all comments from each post
+5. Save everything to `reddit_google_stock_search.json`
+
+## Output Format
+
+The JSON output contains:
+
+```json
+{
+  "search_term": "Google stock",
+  "time_filter": "past week",
+  "sort_by": "relevance",
+  "posts_retrieved": 2,
+  "search_timestamp": "2024-01-XX...",
+  "posts": [
+    {
+      "id": "post_id",
+      "title": "Post Title",
+      "author": "username",
+      "subreddit": "subreddit_name",
+      "score": 100,
+      "upvote_ratio": 0.95,
+      "num_comments": 25,
+      "created_utc": "2024-01-XX...",
+      "url": "https://...",
+      "permalink": "https://reddit.com/r/...",
+      "selftext": "Post content...",
+      "comments": [
+        {
+          "id": "comment_id",
+          "author": "commenter",
+          "body": "Comment text...",
+          "score": 10,
+          "created_utc": "2024-01-XX...",
+          "permalink": "https://reddit.com/...",
+          "is_submitter": false,
+          "distinguished": null,
+          "edited": false
+        }
+      ],
+      "comments_count": 25
+    }
+  ]
+}
+```
+
+## Configuration Options
+
+You can modify the search parameters in the `main()` function:
+
+- **search_term**: Change from "Google stock" to any search query
+- **limit**: Change from 2 to get more/fewer posts
+- **time_filter**: Options are "hour", "day", "week", "month", "year", "all"
+- **sort**: Options are "relevance", "hot", "top", "new", "comments"
+
+## Rate Limiting
+
+The script includes built-in rate limiting protection:
+- Limits comment expansion to prevent excessive API calls
+- Handles API errors gracefully
+- Uses PRAW's built-in rate limiting
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Error**: Verify your credentials in the `.env` file
+2. **No Posts Found**: Try different search terms or time filters
+3. **Rate Limited**: Wait a few minutes and try again
+4. **Missing Comments**: Some comments may be deleted or load slowly
+
+### Debug Mode
+
+To see more detailed output, you can add print statements or check the console output for processing status.
+
+## Requirements
+
+- Python 3.7+
+- PRAW (Python Reddit API Wrapper) 7.7.1
+- python-dotenv 1.0.0
+- Valid Reddit account and API credentials
+
+## License
+
+This project is for educational and research purposes. Please respect Reddit's API terms of service and rate limits. 
