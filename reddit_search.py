@@ -9,16 +9,17 @@ import json
 import os
 import argparse
 from datetime import datetime, timedelta
+from config import REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT, REDDIT_USERNAME, REDDIT_PASSWORD
 
 
 def load_credentials():
-    """Load Reddit API credentials directly."""
+    """Load Reddit API credentials from config."""
     return {
-        'client_id': 'r30D7VvkUutFJtuQ4YNRsg',
-        'client_secret': 'W4e7mRPBHTtPmkS7ui5P60HgFbVX_A',
-        'user_agent': 'desktop:stocksentiment:v1.0.0',
-        'username': 'Professional-Skin424',
-        'password': 'Phh20001007!'
+        'client_id': REDDIT_CLIENT_ID,
+        'client_secret': REDDIT_CLIENT_SECRET,
+        'user_agent': REDDIT_USER_AGENT,
+        'username': REDDIT_USERNAME,
+        'password': REDDIT_PASSWORD
     }
 
 
@@ -336,4 +337,6 @@ REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
   python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
 
   python reddit_search.py -s "Apple stock" -l 10 -t month -o top
+
+  python reddit_search.py -s "Google stock" -l 5 -t day -o hot
 """
