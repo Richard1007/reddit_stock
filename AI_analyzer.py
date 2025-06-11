@@ -1,136 +1,184 @@
 import json
-from openai import OpenAI
-import time
 import sys
-import os
-from config import OPENAI_API_KEY
+from collections import Counter
+from datetime import datetime
 
-# 🔑 Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-# 🧠 1. Summarize the post content
-def summarize_post(title, selftext):
-    prompt = f"""
-You are a financial summarizer. Given the title and selftext of a Reddit post, summarize its core message in 1-3 sentences.
-
-### TITLE:
-{title}
-
-### SELF TEXT:
-{selftext}
-
-Respond with just the summary text.
-"""
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=150
-    )
-    return response.choices[0].message.content.strip()
-
-# 🧠 2. Analyze comment with post summary
-def analyze_comment(comment_body, post_summary):
-    prompt = f"""
-You are a financial assistant. Given a Reddit comment and the post summary it is replying to, analyze it and respond with exactly 3 lines:
-
-SUMMARY: [1-sentence summary of the comment]
-SENTIMENT: [positive/neutral/negative]
-ACTION: [buy/sell/hold/NA]
-
-### POST SUMMARY:
-{post_summary}
-
-### COMMENT:
-{comment_body}
-
-Remember: Respond with exactly 3 lines starting with SUMMARY:, SENTIMENT:, and ACTION:
-"""
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=200
-    )
+def analyze_stock_sentiment(json_file):
+    """Analyze Reddit sentiment and generate stock perception report."""
     
-    raw_content = response.choices[0].message.content.strip()
-    print(f"    📝 Raw response: {raw_content}")
+    # Load the data
+    with open(json_file, 'r') as f:
+        data = json.load(f)
     
-    # Parse the 3 lines
-    lines = raw_content.split('\n')
-    result = {}
+    print("=" * 80)
+    print("📊 GOOGLE/ALPHABET STOCK - REDDIT PUBLIC PERCEPTION REPORT")
+    print("=" * 80)
     
-    for line in lines:
-        line = line.strip()
-        if line.startswith('SUMMARY:'):
-            result['summary'] = line[8:].strip()
-        elif line.startswith('SENTIMENT:'):
-            result['sentiment'] = line[10:].strip().lower()
-        elif line.startswith('ACTION:'):
-            result['stock_action'] = line[7:].strip().lower()
+    # Extract search info
+    search_term = data.get('search_parameters', {}).get('search_term', 'Unknown')
+    search_date = data.get('metadata', {}).get('search_executed_at_readable', 'Unknown')
     
-    # Set defaults if missing
-    result['summary'] = result.get('summary', 'No summary available')
-    result['sentiment'] = result.get('sentiment', 'neutral')
-    result['stock_action'] = result.get('stock_action', 'na')
+    print(f"\n🔍 Search Query: {search_term}")
+    print(f"📅 Analysis Date: {search_date}")
+    print(f"📈 Posts Analyzed: {len(data.get('posts', []))}")
     
-    return result
-
-# Get input file from command line or use default
-if len(sys.argv) > 1:
-    input_file = sys.argv[1]
-else:
-    input_file = "results/google stock/reddit_google_stock_day_hot.json"
-
-print(f"🔄 Processing: {input_file}")
-
-# Load Reddit data
-with open(input_file, "r") as f:
-    reddit_data = json.load(f)
-
-# Process each post
-for post in reddit_data["posts"]:
-    try:
-        post_summary = summarize_post(post["title"], post.get("selftext", ""))
-        post["post_summary"] = post_summary
-        print(f"\nPOST: {post['title'][:80]}...")
-        print(f"SUMMARY: {post_summary}")
+    # Collect all comments with sentiment data
+    all_comments = []
+    google_related_posts = 0
+    
+    for post in data.get('posts', []):
+        # Check if post is actually about Google/Alphabet stock
+        title = post.get('title', '').lower()
+        selftext = post.get('selftext', '').lower()
         
-        for comment in post.get("comments", [])[:10]:  # Max 10 comments
-            try:
-                print(f"  🔄 Processing comment: {comment['body'][:50]}...")
-                result = analyze_comment(comment["body"], post_summary)
-                comment["summary"] = result["summary"]
-                comment["sentiment"] = result["sentiment"]
-                comment["stock_action"] = result["stock_action"]
-                print(f"  ✓ {result['sentiment']}/{result['stock_action']}")
-            except json.JSONDecodeError as e:
-                comment["summary"] = ""
-                comment["sentiment"] = "json_error"
-                comment["stock_action"] = "NA"
-                comment["error"] = f"JSON parsing error: {str(e)}"
-                print(f"  ✗ JSON Error: {str(e)}")
-                print(f"  Raw response might not be valid JSON")
-            except Exception as e:
-                comment["summary"] = ""
-                comment["sentiment"] = "error"
-                comment["stock_action"] = "NA"
-                comment["error"] = str(e)
-                print(f"  ✗ Comment error: {str(e)}")
-                print(f"  Comment length: {len(comment['body'])} chars")
-            time.sleep(0.5)
+        is_google_related = any(keyword in title + ' ' + selftext for keyword in 
+                               ['google', 'alphabet', 'googl', 'goog', 'gemini'])
+        
+        if is_google_related:
+            google_related_posts += 1
+        
+        # Collect comments
+        for comment in post.get('comments', []):
+            if comment.get('sentiment') and comment.get('stock_action'):
+                comment_data = {
+                    'sentiment': comment.get('sentiment'),
+                    'stock_action': comment.get('stock_action'),
+                    'score': comment.get('score', 0),
+                    'summary': comment.get('summary', ''),
+                    'post_title': post.get('title', ''),
+                    'is_google_related': is_google_related
+                }
+                all_comments.append(comment_data)
+    
+    print(f"🎯 Google-Related Posts: {google_related_posts}")
+    print(f"💬 Total Comments Analyzed: {len(all_comments)}")
+    
+    if not all_comments:
+        print("\n❌ No sentiment data found in comments!")
+        return
+    
+    # Sentiment Analysis
+    print("\n" + "="*50)
+    print("📈 SENTIMENT ANALYSIS")
+    print("="*50)
+    
+    sentiments = [c['sentiment'] for c in all_comments]
+    sentiment_counts = Counter(sentiments)
+    
+    total_comments = len(all_comments)
+    for sentiment, count in sentiment_counts.most_common():
+        percentage = (count / total_comments) * 100
+        print(f"{sentiment.upper():>10}: {count:>3} comments ({percentage:>5.1f}%)")
+    
+    # Stock Action Analysis
+    print("\n" + "="*50)
+    print("📊 STOCK ACTION INDICATORS")
+    print("="*50)
+    
+    actions = [c['stock_action'] for c in all_comments]
+    action_counts = Counter(actions)
+    
+    for action, count in action_counts.most_common():
+        percentage = (count / total_comments) * 100
+        action_display = action.upper() if action != 'na' else 'NO ACTION'
+        print(f"{action_display:>10}: {count:>3} comments ({percentage:>5.1f}%)")
+    
+    # Weighted Sentiment (by comment score)
+    print("\n" + "="*50)
+    print("⚖️  WEIGHTED SENTIMENT (by upvotes)")
+    print("="*50)
+    
+    weighted_sentiment = {'positive': 0, 'neutral': 0, 'negative': 0}
+    total_weight = 0
+    
+    for comment in all_comments:
+        score = max(comment['score'], 1)  # Minimum weight of 1
+        weighted_sentiment[comment['sentiment']] += score
+        total_weight += score
+    
+    for sentiment, weight in weighted_sentiment.items():
+        percentage = (weight / total_weight) * 100 if total_weight > 0 else 0
+        print(f"{sentiment.upper():>10}: {percentage:>5.1f}% (weighted by upvotes)")
+    
+    # Overall Assessment
+    print("\n" + "="*50)
+    print("🎯 OVERALL MARKET SENTIMENT ASSESSMENT")
+    print("="*50)
+    
+    positive_pct = (sentiment_counts.get('positive', 0) / total_comments) * 100
+    negative_pct = (sentiment_counts.get('negative', 0) / total_comments) * 100
+    neutral_pct = (sentiment_counts.get('neutral', 0) / total_comments) * 100
+    
+    buy_pct = (action_counts.get('buy', 0) / total_comments) * 100
+    sell_pct = (action_counts.get('sell', 0) / total_comments) * 100
+    hold_pct = (action_counts.get('hold', 0) / total_comments) * 100
+    
+    print(f"\n📊 Sentiment Breakdown:")
+    print(f"   • Positive: {positive_pct:.1f}%")
+    print(f"   • Neutral:  {neutral_pct:.1f}%") 
+    print(f"   • Negative: {negative_pct:.1f}%")
+    
+    print(f"\n💰 Investment Intent:")
+    print(f"   • Buy signals:  {buy_pct:.1f}%")
+    print(f"   • Hold signals: {hold_pct:.1f}%")
+    print(f"   • Sell signals: {sell_pct:.1f}%")
+    
+    # Market Mood Assessment
+    print(f"\n🔮 MARKET MOOD:")
+    if positive_pct > negative_pct + 20:
+        mood = "🚀 BULLISH - Strong positive sentiment toward Google/Alphabet stock"
+    elif negative_pct > positive_pct + 20:
+        mood = "🐻 BEARISH - Negative sentiment prevails"
+    elif positive_pct > negative_pct:
+        mood = "📈 CAUTIOUSLY OPTIMISTIC - Slight positive bias"
+    elif negative_pct > positive_pct:
+        mood = "📉 CAUTIOUS - Slight negative bias"
+    else:
+        mood = "😐 NEUTRAL - Mixed opinions, no clear direction"
+    
+    print(f"   {mood}")
+    
+    # Key Insights
+    print(f"\n💡 KEY INSIGHTS:")
+    
+    if google_related_posts == 0:
+        print("   • ⚠️  No posts directly discussing Google/Alphabet stock performance")
+        print("   • 📝 Comments mostly relate to Google products/services rather than investment")
+    else:
+        print(f"   • 🎯 {google_related_posts} out of {len(data.get('posts', []))} posts directly mention Google/Alphabet")
+    
+    if buy_pct > sell_pct:
+        print(f"   • 💚 More buy signals ({buy_pct:.1f}%) than sell signals ({sell_pct:.1f}%)")
+    elif sell_pct > buy_pct:
+        print(f"   • 🔴 More sell signals ({sell_pct:.1f}%) than buy signals ({buy_pct:.1f}%)")
+    
+    if neutral_pct > 60:
+        print("   • 😐 Majority of comments are neutral - limited strong opinions")
+    
+    # Most upvoted comments
+    print(f"\n🔥 TOP UPVOTED COMMENTS:")
+    top_comments = sorted(all_comments, key=lambda x: x['score'], reverse=True)[:3]
+    
+    for i, comment in enumerate(top_comments, 1):
+        print(f"\n   {i}. Score: {comment['score']} | {comment['sentiment'].upper()} | {comment['stock_action'].upper()}")
+        print(f"      Post: {comment['post_title'][:60]}...")
+        print(f"      Summary: {comment['summary'][:80]}...")
+    
+    print("\n" + "="*80)
+    print("📋 DISCLAIMER: This analysis is based on a small sample of Reddit comments")
+    print("and should not be used as the sole basis for investment decisions.")
+    print("="*80)
+
+# Main execution
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        json_file = sys.argv[1]
+    else:
+        json_file = "results/google stock/reddit_google_stock_day_hot_summarized.json"
+    
+    try:
+        analyze_stock_sentiment(json_file)
+    except FileNotFoundError:
+        print(f"❌ File not found: {json_file}")
     except Exception as e:
-        post["post_summary"] = ""
-        post["error"] = str(e)
-        print(f"  ✗ Post error")
-        continue
-
-# Save to same folder as input
-input_dir = os.path.dirname(input_file)
-input_name = os.path.splitext(os.path.basename(input_file))[0]
-output_file = os.path.join(input_dir, f"{input_name}_summarized.json")
-
-with open(output_file, "w") as f:
-    json.dump(reddit_data, f, indent=2)
-
-print(f"\n✅ Saved: {output_file}")
+        print(f"❌ Error: {e}")

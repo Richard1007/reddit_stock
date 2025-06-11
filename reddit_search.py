@@ -161,13 +161,26 @@ def search_reddit_posts(reddit, search_term="Google stock", limit=2, time_filter
 
 
 def save_to_json(data, filename="reddit_google_stock_search.json"):
-    """Save data to JSON file."""
+    """Save data to JSON file in date-organized folder structure."""
     try:
-        with open(filename, 'w', encoding='utf-8') as f:
+        # Create date-based folder (MM-DD-YYYY format)
+        current_date = datetime.now()
+        date_folder = current_date.strftime("%m-%d-%Y")
+        results_folder = os.path.join("results", date_folder)
+        
+        # Create the directory if it doesn't exist
+        os.makedirs(results_folder, exist_ok=True)
+        
+        # Create the full file path
+        full_path = os.path.join(results_folder, filename)
+        
+        with open(full_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        print(f"Data saved to {filename}")
+        print(f"Data saved to {full_path}")
+        return full_path
     except Exception as e:
         print(f"Error saving to JSON: {e}")
+        return None
 
 
 def create_argument_parser():
@@ -294,7 +307,11 @@ def main():
         }
         
         # Save to JSON
-        save_to_json(summary, filename)
+        saved_path = save_to_json(summary, filename)
+        
+        # Update the results summary with actual saved path
+        if saved_path:
+            summary['results_summary']['saved_path'] = saved_path
         
         # Print summary
         print(f"\nSummary:")
@@ -305,7 +322,7 @@ def main():
             print(f"{i}. '{post['title'][:60]}...' in r/{post['subreddit']}")
             print(f"   Score: {post['score']}, Comments: {post['comments_count']}")
         
-        print(f"\nData saved to {filename}")
+        print(f"\nData saved to {saved_path if saved_path else filename}")
         print(f"JSON includes: metadata, search parameters, results summary, and all post data")
         
     except Exception as e:
