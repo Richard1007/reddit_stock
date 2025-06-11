@@ -356,4 +356,6 @@ REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
   python reddit_search.py -s "Apple stock" -l 10 -t month -o top
 
   python reddit_search.py -s "Google stock" -l 5 -t day -o hot
+
+  python reddit_search.py -s "SPY stock" -l 5 -t month -o comments
 """
