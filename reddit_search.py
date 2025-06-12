@@ -10,6 +10,7 @@ import os
 import argparse
 from datetime import datetime, timedelta
 from config import REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT, REDDIT_USERNAME, REDDIT_PASSWORD
+import time
 
 
 def load_credentials():
@@ -34,14 +35,16 @@ def create_reddit_instance(credentials):
     )
 
 
-def extract_comments(comment_forest, max_depth=5, current_depth=0):
+def extract_comments(comment_forest, max_depth=5, current_depth=0, batch_size=200, delay_seconds=30):
     """
-    Recursively extract comments from a comment forest.
+    Recursively extract comments from a comment forest in batches.
     
     Args:
         comment_forest: PRAW CommentForest or list of comments
         max_depth: Maximum recursion depth to prevent infinite loops
         current_depth: Current recursion depth
+        batch_size: Number of comments to process before taking a break (default: 200)
+        delay_seconds: Number of seconds to wait between batches (default: 30)
     
     Returns:
         List of comment dictionaries
@@ -50,43 +53,89 @@ def extract_comments(comment_forest, max_depth=5, current_depth=0):
         return []
     
     comments_data = []
+    total_comments_processed = 0
+    total_comments_scraped = 0
+    last_milestone = 0
     
     # Replace MoreComments instances to get all comments
     if hasattr(comment_forest, 'replace_more'):
         try:
-            comment_forest.replace_more(limit=32)  # Limit to prevent rate limiting
+            # Process comments in batches
+            batch_count = 0
+            max_retries = 3
+            
+            while True:
+                try:
+                    batch_count += 1
+                    remaining = None
+                    
+                    for retry in range(max_retries):
+                        try:
+                            remaining = comment_forest.replace_more(limit=batch_size)
+                            break
+                        except Exception as e:
+                            if retry < max_retries - 1:
+                                time.sleep(delay_seconds)
+                            break
+                    
+                    if remaining is None:
+                        break
+                        
+                    if not remaining:
+                        break
+                    
+                    total_comments_processed += batch_size
+                    
+                    if remaining:
+                        time.sleep(delay_seconds)
+                        
+                except Exception as e:
+                    break
+                    
         except Exception as e:
-            print(f"Warning: Could not load all comments: {e}")
+            pass
     
     # Get all comments as a flat list
-    if hasattr(comment_forest, 'list'):
-        all_comments = comment_forest.list()
-    else:
-        all_comments = comment_forest
+    try:
+        if hasattr(comment_forest, 'list'):
+            all_comments = comment_forest.list()
+        else:
+            all_comments = comment_forest
+            
+        for comment in all_comments:
+            if hasattr(comment, 'body') and hasattr(comment, 'author'):
+                try:
+                    comment_data = {
+                        'id': comment.id,
+                        'author': str(comment.author) if comment.author else '[deleted]',
+                        'body': comment.body,
+                        'score': comment.score,
+                        'created_utc': datetime.fromtimestamp(comment.created_utc).isoformat(),
+                        'permalink': f"https://reddit.com{comment.permalink}",
+                        'is_submitter': comment.is_submitter,
+                        'distinguished': comment.distinguished,
+                        'edited': comment.edited if comment.edited else False,
+                        'num_replies': len(comment.replies) if hasattr(comment, 'replies') else 0
+                    }
+                    comments_data.append(comment_data)
+                    total_comments_scraped += 1
+                    
+                    # Show progress every 1000 comments
+                    if total_comments_scraped >= last_milestone + 1000:
+                        print(f"Total comments scraped: {total_comments_scraped}")
+                        last_milestone = (total_comments_scraped // 1000) * 1000
+                        
+                except Exception as e:
+                    continue
+                    
+    except Exception as e:
+        pass
     
-    for comment in all_comments:
-        if hasattr(comment, 'body') and hasattr(comment, 'author'):
-            try:
-                comment_data = {
-                    'id': comment.id,
-                    'author': str(comment.author) if comment.author else '[deleted]',
-                    'body': comment.body,
-                    'score': comment.score,
-                    'created_utc': datetime.fromtimestamp(comment.created_utc).isoformat(),
-                    'permalink': f"https://reddit.com{comment.permalink}",
-                    'is_submitter': comment.is_submitter,
-                    'distinguished': comment.distinguished,
-                    'edited': comment.edited if comment.edited else False
-                }
-                comments_data.append(comment_data)
-            except Exception as e:
-                print(f"Error processing comment {comment.id}: {e}")
-                continue
-    
+    print(f"\nFinal comment count: {total_comments_scraped} comments scraped")
     return comments_data
 
 
-def search_reddit_posts(reddit, search_term="Google stock", limit=2, time_filter="week", sort="relevance"):
+def search_reddit_posts(reddit, search_term="Daily Discussion Thread", limit=1, time_filter="all", sort="new"):
     """
     Search Reddit for posts matching the search term.
     
@@ -102,10 +151,10 @@ def search_reddit_posts(reddit, search_term="Google stock", limit=2, time_filter
     """
     posts_data = []
     
-    # Search across all of Reddit
+    # Search only in r/wallstreetbets
     try:
-        # Use reddit.subreddit("all") to search across all subreddits
-        subreddit = reddit.subreddit("all")
+        # Use wallstreetbets subreddit instead of all
+        subreddit = reddit.subreddit("wallstreetbets")
         
         # Search for posts, sorted by relevance (default)
         search_results = subreddit.search(
@@ -292,7 +341,7 @@ def main():
                 'limit_requested': args.limit,
                 'time_filter': args.time_filter,
                 'sort_method': args.sort,
-                'search_scope': 'all_subreddits',
+                'search_scope': 'r/wallstreetbets',
                 'include_comments': True,
                 'comment_sort': 'best'
             },
@@ -351,11 +400,13 @@ REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
                 # Show help
 
  Examples:
-  python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
+#   python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
 
-  python reddit_search.py -s "Apple stock" -l 10 -t month -o top
+#   python reddit_search.py -s "Apple stock" -l 10 -t month -o top
 
-  python reddit_search.py -s "Google stock" -l 5 -t day -o hot
+#   python reddit_search.py -s "Google stock" -l 5 -t day -o hot
 
-  python reddit_search.py -s "SPY stock" -l 5 -t month -o comments
+#   python reddit_search.py -s "SPY stock" -l 5 -t month -o comments
+
+  python reddit_search.py -s "Daily Discussion Thread" -l 1 -t all -o new
 """
