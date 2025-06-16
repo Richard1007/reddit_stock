@@ -402,11 +402,10 @@ REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
  Examples:
 #   python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
 
-#   python reddit_search.py -s "Apple stock" -l 10 -t month -o top
 
-#   python reddit_search.py -s "Google stock" -l 5 -t day -o hot
-
-#   python reddit_search.py -s "SPY stock" -l 5 -t month -o comments
-
-  python reddit_search.py -s "Daily Discussion Thread" -l 1 -t all -o new
+  python reddit_search.py -s "Daily Discussion Thread for June 13" -l 1 -o relevance
+  python reddit_search.py -s "Daily Discussion Thread for June 12" -l 1 -o relevance
+  python reddit_search.py -s "Daily Discussion Thread for June 11" -l 1 -o relevance
+  python reddit_search.py -s "Daily Discussion Thread for June 10" -l 1 -o relevance
+  python reddit_search.py -s "Daily Discussion Thread for June 09" -l 1 -o relevance
 """
