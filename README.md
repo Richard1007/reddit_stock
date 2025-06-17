@@ -1,152 +1,79 @@
-# Reddit API - Google Stock Search
+# Reddit Search API
 
-This Python script uses the official Reddit API (via PRAW) to search for posts about "Google stock" from the past week, retrieving the top 2 posts sorted by relevance along with all their comments as JSON data.
+A Python script to search and extract posts and comments from Reddit using the PRAW (Python Reddit API Wrapper) library.
 
 ## Features
 
-- Searches Reddit for "Google stock" posts from the past week
-- Retrieves top 2 posts sorted by relevance
-- Extracts all comments from each post
-- Saves data as structured JSON
-- Handles deleted users, comments, and API rate limits
+- Search Reddit posts with configurable parameters
+- Extract posts and their comments
+- Save results in JSON format
+- Configurable search parameters (time filter, sort method, etc.)
+- Rate limiting and error handling
+
+## Prerequisites
+
+- Python 3.6 or higher
+- Reddit API credentials
 
 ## Setup
 
-### 1. Install Dependencies
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/reddit-search-api.git
+cd reddit-search-api
+```
 
+2. Install required packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Reddit API Credentials
-
-You need to create a Reddit application to get API credentials:
-
-1. Go to https://www.reddit.com/prefs/apps
-2. Click "Create App" or "Create Another App"
-3. Choose "script" as the application type
-4. Fill in the required fields:
-   - **Name**: Your app name (e.g., "Google Stock Search")
-   - **Description**: Brief description
-   - **About URL**: Can be left blank
-   - **Redirect URI**: Use `http://localhost:8080` for script apps
-
-5. After creating the app, note down:
-   - **Client ID**: Found under the app name (short string)
-   - **Client Secret**: The longer string labeled "secret"
-
-### 3. Environment Configuration
-
-The credentials are currently hardcoded in the scripts. You can modify them in:
-- `reddit_search.py` 
-- `simple_test.py`
-
-Or use the format in `env_example.txt` to set up environment variables.
+3. Set up your Reddit API credentials:
+   - Go to https://www.reddit.com/prefs/apps
+   - Create a new application
+   - Copy `.env.example` to `.env`
+   - Fill in your credentials in `.env`:
+     ```
+     REDDIT_CLIENT_ID=your_client_id_here
+     REDDIT_CLIENT_SECRET=your_client_secret_here
+     REDDIT_USER_AGENT=your_user_agent_here
+     REDDIT_USERNAME=your_username_here
+     REDDIT_PASSWORD=your_password_here
+     ```
 
 ## Usage
 
-### Quick Test
+Basic usage:
+```bash
+python reddit_search.py -s "search term" -l 5 -t week -o hot
+```
 
-Run the connection test:
+### Parameters
+
+- `-s, --search-term`: Search term to look for (default: "Google stock")
+- `-l, --limit`: Number of posts to retrieve (default: 2)
+- `-t, --time-filter`: Time filter for posts (day, week, month, year, all)
+- `-o, --sort`: Sort method (relevance, hot, top, new, comments)
+
+### Examples
 
 ```bash
-python simple_test.py
+# Search for Tesla stock posts
+python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
+
+# Search for daily discussion threads
+python reddit_search.py -s "Daily Discussion Thread" -l 1 -t all -o new
 ```
 
-### Main Search
+## Output
 
-Run the main script:
+Results are saved in JSON format in the `results` directory, organized by date.
 
-```bash
-python reddit_search.py
-```
-
-The script will:
-1. Connect to Reddit API
-2. Search for "Google stock" posts from the past week
-3. Retrieve the top 2 posts sorted by relevance
-4. Extract all comments from each post
-5. Save everything to `reddit_google_stock_search.json`
-
-## Output Format
-
-The JSON output contains:
-
-```json
-{
-  "search_term": "Google stock",
-  "time_filter": "past week",
-  "sort_by": "relevance",
-  "posts_retrieved": 2,
-  "search_timestamp": "2024-01-XX...",
-  "posts": [
-    {
-      "id": "post_id",
-      "title": "Post Title",
-      "author": "username",
-      "subreddit": "subreddit_name",
-      "score": 100,
-      "upvote_ratio": 0.95,
-      "num_comments": 25,
-      "created_utc": "2024-01-XX...",
-      "url": "https://...",
-      "permalink": "https://reddit.com/r/...",
-      "selftext": "Post content...",
-      "comments": [
-        {
-          "id": "comment_id",
-          "author": "commenter",
-          "body": "Comment text...",
-          "score": 10,
-          "created_utc": "2024-01-XX...",
-          "permalink": "https://reddit.com/...",
-          "is_submitter": false,
-          "distinguished": null,
-          "edited": false
-        }
-      ],
-      "comments_count": 25
-    }
-  ]
-}
-```
-
-## Configuration Options
-
-You can modify the search parameters in the `main()` function:
-
-- **search_term**: Change from "Google stock" to any search query
-- **limit**: Change from 2 to get more/fewer posts
-- **time_filter**: Options are "hour", "day", "week", "month", "year", "all"
-- **sort**: Options are "relevance", "hot", "top", "new", "comments"
-
-## Rate Limiting
-
-The script includes built-in rate limiting protection:
-- Limits comment expansion to prevent excessive API calls
-- Handles API errors gracefully
-- Uses PRAW's built-in rate limiting
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Authentication Error**: Verify your credentials in the `.env` file
-2. **No Posts Found**: Try different search terms or time filters
-3. **Rate Limited**: Wait a few minutes and try again
-4. **Missing Comments**: Some comments may be deleted or load slowly
-
-### Debug Mode
-
-To see more detailed output, you can add print statements or check the console output for processing status.
-
-## Requirements
-
-- Python 3.7+
-- PRAW (Python Reddit API Wrapper) 7.7.1
-- python-dotenv 1.0.0
-- Valid Reddit account and API credentials
 
 ## License
 
-This project is for educational and research purposes. Please respect Reddit's API terms of service and rate limits. 
+MIT License
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. 

@@ -3,24 +3,25 @@
 Reddit API script to search for posts with configurable parameters.
 Gets posts with all comments as JSON.
 """
-
 import praw
 import json
 import os
 import argparse
 from datetime import datetime, timedelta
-from config import REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT, REDDIT_USERNAME, REDDIT_PASSWORD
+from dotenv import load_dotenv
 import time
 
+# Load environment variables from .env file
+load_dotenv()
 
 def load_credentials():
-    """Load Reddit API credentials from config."""
+    """Load Reddit API credentials from environment variables."""
     return {
-        'client_id': REDDIT_CLIENT_ID,
-        'client_secret': REDDIT_CLIENT_SECRET,
-        'user_agent': REDDIT_USER_AGENT,
-        'username': REDDIT_USERNAME,
-        'password': REDDIT_PASSWORD
+        'client_id': os.getenv('REDDIT_CLIENT_ID'),
+        'client_secret': os.getenv('REDDIT_CLIENT_SECRET'),
+        'user_agent': os.getenv('REDDIT_USER_AGENT'),
+        'username': os.getenv('REDDIT_USERNAME'),
+        'password': os.getenv('REDDIT_PASSWORD')
     }
 
 
@@ -400,12 +401,6 @@ REDDIT SEARCH SCRIPT - COMPLETE USAGE GUIDE
                 # Show help
 
  Examples:
-#   python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
-
-
+# python reddit_search.py -s "Tesla stock" -l 5 -t day -o hot
   python reddit_search.py -s "Daily Discussion Thread for June 13" -l 1 -o relevance
-  python reddit_search.py -s "Daily Discussion Thread for June 12" -l 1 -o relevance
-  python reddit_search.py -s "Daily Discussion Thread for June 11" -l 1 -o relevance
-  python reddit_search.py -s "Daily Discussion Thread for June 10" -l 1 -o relevance
-  python reddit_search.py -s "Daily Discussion Thread for June 09" -l 1 -o relevance
 """
