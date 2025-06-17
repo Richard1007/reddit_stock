@@ -10,7 +10,6 @@ import argparse
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import time
-
 # Load environment variables from .env file
 load_dotenv()
 
